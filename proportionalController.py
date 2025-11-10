@@ -1,10 +1,10 @@
 import WebGUI
 import HAL
 import Frequency
-
 import cv2
 
 i = 0
+Kp = 0.01
 
 while True:
     img = HAL.getImage()
@@ -18,14 +18,17 @@ while True:
     else:
         cX = 0
 
-    if cX > 0:
-        error = 320 - cX 
-        if error > 80:
-            HAL.setV(3)
-        else:
-            HAL.setV(6)
-        HAL.setW(0.01 * error)
+    error = 320 - cX
+    w = Kp * error
+    
+    if abs(error) > 80:
+        HAL.setV(3)
+    else:
+        HAL.setV(6)
+    
+    HAL.setW(w)
 
     WebGUI.showImage(img)
-    print('%d cX: %.2f' % (i, cX))
+
+    print(f'{i} cX: {cX:.2f} error: {error:.2f} w: {w:.2f}')
     i = i + 1
