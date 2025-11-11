@@ -7,7 +7,7 @@ import cv2
 i = 0
 previous_error = 0.0
 Kp = 0.01
-Kd = 0.007
+Kd = 0.008
 
 while True:
     img = HAL.getImage()
@@ -29,9 +29,9 @@ while True:
         w = Kp * error + Kd * derivative
 
         if abs(error) > 80:
-            HAL.setV(2)
+            HAL.setV(3)
         else:
-            HAL.setV(7.6)
+            HAL.setV(7.7)
 
         HAL.setW(w)
 
