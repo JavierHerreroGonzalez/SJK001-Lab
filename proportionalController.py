@@ -17,16 +17,17 @@ while True:
         cX = M["m10"] / M["m00"]
     else:
         cX = 0
-
-    error = 320 - cX
-    w = Kp * error
+        
+    if cX > 0:
+        error = 320 - cX
+        w = Kp * error
+        
+        if abs(error) > 80:
+            HAL.setV(3)
+        else:
+            HAL.setV(6)
     
-    if abs(error) > 80:
-        HAL.setV(3)
-    else:
-        HAL.setV(6)
-    
-    HAL.setW(w)
+        HAL.setW(w)
 
     WebGUI.showImage(img)
 
