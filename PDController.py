@@ -39,5 +39,5 @@ while True:
 
     WebGUI.showImage(img)
 
-    print(f'{i} cX: {cX:.2f} error: {error:.2f} w: {w:.2f}')
+    #print(f'{i} cX: {cX:.2f} error: {error:.2f} w: {w:.2f}')
     i = i + 1
