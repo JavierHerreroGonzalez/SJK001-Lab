@@ -6,7 +6,7 @@ import cv2
 altitude = 4
 survivor_x = 36
 survivor_y = -36
-aproach_tolerance = 0.4
+aproach_tolerance = 0.8
 distance_threshold = 10
 fast_speed = 5.0
 slow_speed = 1.0
@@ -14,14 +14,14 @@ slow_speed = 1.0
 # Take off
 HAL.takeoff(altitude)
 
-# Aproach the survivors' region
+# Move to the survivors' region
 while True:
    x, y, z = HAL.get_position()
    dx = survivor_x - x
    dy = survivor_y - y
    distance = math.sqrt(dx**2 + dy**2)
 
-   # Check if the drone is almost at the coordinates
+   # Check if the drone is very near to the coordinates
    if distance < approach_tolerance:
       break
 
@@ -39,4 +39,21 @@ while True:
    WebGUI.showImage(HAL.get_frontal_image())
    WebGUI.showLeftImage(HAL.get_ventral_image())
 
+# Slowly move to the exact coordinates
+while True:
+   x, y, z = HAL.get_position()
+   dx = survivor_x - x
+   dy = survivor_y - y
+   dy = altitude - z
+   distance = math.sqrt(dx**2 + dy**2 + dz**2)
+   
+   HAL.set_cmd_pos(survivor_x, survivor_y, altitude, 0)
+   
+   WebGUI.showImage(HAL.get_frontal_image())
+   WebGUI.showLeftImage(HAL.get_ventral_image())
+
+   # Check if the drone is almost at the coordinates
+   if distance < (approach_tolerance / 2):
+      break
+           
 # Move in a spiral
