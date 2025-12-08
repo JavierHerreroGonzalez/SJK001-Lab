@@ -12,6 +12,7 @@ distance_threshold = 10
 fast_speed = 6.2
 slow_speed = 1.0
 
+max_spiral_radius = 30
 theta_limit = 22 * math.pi
 spiral_a = 1.0
 spiral_b = 0.35
@@ -76,7 +77,7 @@ def detect_face():
     gray_original = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     # Angles to try (covers most ground orientations)
-    angles = [0, 45, -45, 90, -90]
+    angles = [0, 30, -30, 60, -60, 90, -90]
 
     for angle in angles:
         if angle == 0:
@@ -109,33 +110,34 @@ def is_new_survivor(x, y, survivors, threshold=3.0):
 # Move in a spiral
 theta = 0.0
 print('Moving in a spiral')
-while theta < theta_limit:
-   # Archimedean spiral equation
-   r = spiral_a + (spiral_b * theta)
-   tx = survivor_x + (r * math.cos(theta))
-   ty = survivor_y + (r * math.sin(theta))
+r = spiral_a + (spiral_b * theta)
+while r <= max_spiral_radius:        
+    # Archimedean spiral equation  
+    tx = survivor_x + (r * math.cos(theta))
+    ty = survivor_y + (r * math.sin(theta))
 
-   # Move to the next spiral point
-   while True:
+    # Move to the next spiral point
+    while True:
       x, y, z = HAL.get_position()
       d = math.sqrt((tx - x)**2 + (ty - y)**2)
-
+    
       HAL.set_cmd_pos(tx, ty, altitude, 0)
-
+    
       # Detect faces
       if detect_face():
     
         # Avoid duplicate storage
         if is_new_survivor(x, y, survivors_detected, threshold=5.0):
-            print("Face detected at:", x, y)
+            print(f"Face detected at: ({x:.2f}, {y:.2f})")
             survivors_detected.append((x, y))
-
+    
       WebGUI.showImage(HAL.get_frontal_image())
       WebGUI.showLeftImage(HAL.get_ventral_image())
-
+    
       if d < spiral_tolerance:
          break
       
-   theta += theta_step
+    theta += theta_step
+    r = spiral_a + (spiral_b * theta)
 
-   
+print("Survivors detected: ", survivors_detected)
