@@ -12,7 +12,7 @@ distance_threshold = 10
 fast_speed = 6.2
 slow_speed = 1.0
 
-max_spiral_radius = 30
+max_spiral_radius = 12.5
 theta_limit = 22 * math.pi
 spiral_a = 1.0
 spiral_b = 0.35
@@ -29,7 +29,7 @@ face_cascade = cv2.CascadeClassifier(
 HAL.takeoff(altitude)
 
 # Move to the survivors' region
-print('Moving to the region')
+print('Moving to the survivors\' region...')
 while True:
    x, y, z = HAL.get_position()
    dx = survivor_x - x
@@ -55,7 +55,7 @@ while True:
    WebGUI.showLeftImage(HAL.get_ventral_image())
 
 # Slowly move to the exact coordinates
-print('Slowly approaching the position')
+print('Slowly approaching the position...')
 while True:
    x, y, z = HAL.get_position()
    dx = survivor_x - x
@@ -77,7 +77,7 @@ def detect_face():
     gray_original = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     # Angles to try (covers most ground orientations)
-    angles = [0, 30, -30, 60, -60, 90, -90]
+    angles = [0, 45, -45, 90, -90, 135, -135, 180]
 
     for angle in angles:
         if angle == 0:
@@ -101,7 +101,7 @@ def detect_face():
     return False
 
 
-def is_new_survivor(x, y, survivors, threshold=3.0):
+def is_new_survivor(x, y, survivors, threshold):
     for sx, sy in survivors:
         if math.sqrt((x - sx)**2 + (y - sy)**2) < threshold:
             return False
@@ -109,7 +109,7 @@ def is_new_survivor(x, y, survivors, threshold=3.0):
 
 # Move in a spiral
 theta = 0.0
-print('Moving in a spiral')
+print('Searching in a spiral...')
 r = spiral_a + (spiral_b * theta)
 while r <= max_spiral_radius:        
     # Archimedean spiral equation  
@@ -127,7 +127,7 @@ while r <= max_spiral_radius:
       if detect_face():
     
         # Avoid duplicate storage
-        if is_new_survivor(x, y, survivors_detected, threshold=5.0):
+        if is_new_survivor(x, y, survivors_detected, 5.0):
             print(f"Face detected at: ({x:.2f}, {y:.2f})")
             survivors_detected.append((x, y))
     
@@ -140,4 +140,54 @@ while r <= max_spiral_radius:
     theta += theta_step
     r = spiral_a + (spiral_b * theta)
 
-print("Survivors detected: ", survivors_detected)
+print("Search finished")
+
+# Return to the boat
+print("Returning to the boat...")
+while True:
+   x, y, z = HAL.get_position()
+   dx = 0 - x
+   dy = 0 - y
+   distance = math.sqrt(dx**2 + dy**2)
+
+   # Check if the drone is very near to the coordinates
+   if distance < approach_tolerance:
+      break
+
+   # Scale the speed depending on the distance
+   speed = fast_speed if distance > distance_threshold else slow_speed
+   vx = speed * (dx / distance)
+   vy = speed * (dy / distance)
+
+   # Keep altitude stable
+   vz = 0.7 * (altitude - z)
+   vz = max(min(vz, 1.0), -1.0)
+   
+   HAL.set_cmd_vel(vx, vy, vz, 0)
+   
+   WebGUI.showImage(HAL.get_frontal_image())
+   WebGUI.showLeftImage(HAL.get_ventral_image())
+
+# Slowly move to the exact coordinates
+print('Slowly approaching the position...')
+while True:
+   x, y, z = HAL.get_position()
+   dx = 0 - x
+   dy = 0 - y
+   dz = altitude - z
+   distance = math.sqrt(dx**2 + dy**2 + dz**2)
+   
+   HAL.set_cmd_pos(0, 0, altitude, 0)
+   
+   WebGUI.showImage(HAL.get_frontal_image())
+   WebGUI.showLeftImage(HAL.get_ventral_image())
+
+   # Check if the drone is almost at the coordinates
+   if distance < (approach_tolerance / 2):
+      break
+
+print("Landing initiated...")
+HAL.land()
+
+print("Survivors detected:", survivors_detected)
+print("Mission complete")
