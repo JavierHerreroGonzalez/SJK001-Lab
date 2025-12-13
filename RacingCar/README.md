@@ -1,7 +1,7 @@
 # Autonomous Racing Challenge
 ## Overview
 
-This repository contains the implementations of three controllers for the Visual Follow Line exercise in Unibotics.
+This directory contains the implementations of three controllers for the Visual Follow Line exercise in Unibotics.
 
 In this challenge, a racing car must follow a red line on the track using computer vision and feedback control, adjusting its steering to minimize lateral deviation and complete laps efficiently and smoothly.
 
