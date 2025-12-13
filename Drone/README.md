@@ -52,9 +52,15 @@ Since the code is extensive and accomplishes multiple tasks, it makes use of a w
 
 - Spiral search
   - `max_spiral_radius`: Maximum radius (in meters) of the spiral search around the target coordinates. Limits the search area.
-  - ``
--
--
+  - `spiral_a`: Base radius offset for the Archimedean spiral. Determines the initial distance from the center.
+  - `spiral_b`: Spiral growth rate. Controls how fast the spiral expands with each rotation.
+  - `theta_step`: Angular increment (in radians) for each step along the spiral. Smaller values give finer coverage but slower search.
+  - `spiral_tolerance`: Distance threshold to consider the drone has reached a spiral point. Ensures smooth progression along the spiral.
+
+- Face detection
+  - `face_cascade`: Detects human faces in the ventral camera feed. Can be rotated at multiple angles to improve detection accuracy.
+  - `angles`: Set of rotation angles (degrees) applied to images to detect faces in different orientations.
+  - `is_new_survivor`: Minimum distance (in meters) between previously detected survivors and a new detection to avoid duplicates.
 
 ## Observations
 - Face detection: Rotating the image at multiple angles significantly increases detection success, especially since some survivors are not aligned with the camera.
