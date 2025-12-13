@@ -4,3 +4,6 @@ This repository contains the implementations of the controllers for the Visual F
 
 ## Structure
 Inside each folder are the controller implementations along with a README file detailing the respective exercise and explaining the code.
+
+## Author
+The author of this repository is Javier Herrero González.
