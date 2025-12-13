@@ -13,7 +13,6 @@ fast_speed = 6.2
 slow_speed = 1.0
 
 max_spiral_radius = 12.5
-theta_limit = 22 * math.pi
 spiral_a = 1.0
 spiral_b = 0.35
 theta_step = 0.2
