@@ -1,103 +1,78 @@
 # Autonomous Drone Challenge
-
-<img width="1111" height="425" alt="Captura desde 2025-12-09 19-22-17" src="https://github.com/user-attachments/assets/c65d7e4c-cc35-4b36-bc01-bfa43257cc38" />
-<img width="1111" height="397" alt="Captura desde 2025-12-09 19-22-49" src="https://github.com/user-attachments/assets/a91e27e2-6722-4859-a26a-8eab767c31bc" />
-<img width="1111" height="875" alt="Captura desde 2025-12-09 19-24-41" src="https://github.com/user-attachments/assets/52390d13-ebde-475b-9573-2e1980d60f11" />
-
 ## Overview
 
-This directory contains the implementation of the controller for the Drone Rescue People exercise in Unibotics.
+This folder contains the implementation of an autonomous drone controller for the Drone Rescue People exercise in the Unibotics Robotics Academy.
 
-In this challenge, a drone must takeoff from a boat, .
+The goal is to locate survivors in a specified area, using computer vision to detect faces, and then safely return to the starting position. The drone uses a combination of targeted movement and spiral search patterns to maximize the chance of finding all survivors.
 
-The controllers implemented here use the detected line position to compute steering commands that keep the vehicle aligned with the racing line.
+## Controller
 
-## Controllers
+The drone’s behavior is divided into several phases:
 
-All controllers share a common processing pipeline:
+1. Takeoff and move to search area:
+The drone first takes off to a set altitude and moves towards the predefined coordinates of the survivor area. Altitude is regulated with proportional control to maintain stability and speed is scaled based on the distance to the target:
 
-1. Image Processing:
-The car’s camera feed is converted to HSV and thresholded to detect the red line. Contour extraction is then used to compute the centroid of the line.
+- Fast Speed: When far from target
+- Slow Speed: When approaching target
 
-2. Error Calculation:
-The horizontal offset between the line’s centroid (cX) and the center of the image (assumed to be 320 pixels) defines the tracking error:
+2. Fine approach:
+Once near the target area, the drone slowly moves to the exact coordinates for precision positioning. This ensures that the subsequent spiral search is centered correctly.
 
-`error = 320 - cX`
+3. Survivor detection:
+Faces are detected using OpenCV’s Haar cascade classifier applied to the ventral camera feed. To improve detection across orientations, images are rotated at multiple angles before performing detection. A detected face is only recorded if it is sufficiently far from previously detected survivors, avoiding duplicates.
 
-4. Vehicle Control:
-The linear velocity is adjusted based on the magnitude of the error:
-
-```
-if abs(error) > 80:
-  HAL.setV(3)
-else:
-  HAL.setV(6)
-```
-
-The angular velocity is controlled using variables computed by each controller:
-
-`HAL.setW(w)`
-
-### Proportional Controller
-
-The simplest form of control, where the steering command is proportional to the current error:
+4. Spiral search:
+The drone performs an Archimedean spiral search around the initial target coordinates. This systematic pattern ensures thorough coverage of the search area:
 
 ```
-Kp = 0.01
-w = Kp * error
+r = spiral_a + spiral_b * theta
+tx = target_x + r * cos(theta)
+ty = target_y + r * sin(theta)
 ```
 
-Lap time:
+- `theta` increments in small steps (`theta_step`)
+- `r` grows until the maximum search radius (`max_spiral_radius`)
+- The drone moves to each point in the spiral, scanning for faces
 
-<img width="1114" height="300" alt="Captura desde 2025-11-11 17-01-25" src="https://github.com/user-attachments/assets/a8194bdd-6c6c-4a4f-9646-d22f0c3c5038" />
+5. Return to base:
+After completing the search, the drone returns to the starting position (the “boat”) using the same distance-based velocity control and fine approach for precision landing.
 
-### Proportional Derivative Controller
+6. Mission output:
+The program prints the positions of detected survivors and a message indicating the successful completion of the mission.
 
-Adds a derivative term that reacts to changes in the error, helping reduce overshoot and improving stability:
+## Parameters
+Since the code is extensive and accomplishes multiple tasks, it makes use of a whole array of different parameters:
 
-```
-Kp = 0.01
-Kd = 0.008
-derivative = error - previous_error
-w = Kp * error + Kd * derivative
-previous_error = error
-```
+- Drone flight
+  - `altitude`: The target altitude (in meters) the drone maintains during flight. Ensures the drone is high enough to safely navigate and detect survivors.
+  - `approach_tolerance`: Distance (in meters) used to consider that the drone has reached a target position. Helps determine when to stop moving toward a point.
+  - `distance_threshold`: Distance (in meters) beyond which the drone moves at `fast_speed`. Used to scale speed depending on proximity to target.
+  - `fast_speed`: Velocity (in m/s) applied when the drone is far from a target location. Optimizes travel time.
+  - `slow_speed`: Velocity (in m/s) applied when the drone is near the target. Improves precision for delicate maneuvers.
 
-Lap time:
-
-<img width="1114" height="300" alt="Captura desde 2025-11-11 17-03-46" src="https://github.com/user-attachments/assets/d28dc735-c9b3-435a-8a4c-7025b81d6b77" />
-
-### Proportional Integral Derivative Controller
-
-Further introduces an integral term that accumulates past errors to reduce long-term bias:
-
-```
-Kp = 0.01
-Kd = 0.005
-Ki = 0.00001
-derivative = error - previous_error
-integral += error
-w = Kp * error + Kd * derivative + Ki * integral
-previous_error = error
-```
-
-Lap time:
-
-<img width="1114" height="300" alt="Captura desde 2025-11-11 17-08-26" src="https://github.com/user-attachments/assets/f6ef3fd8-1f73-4213-83f9-527d5efaa81a" />
+- Spiral search
+  - `max_spiral_radius`: Maximum radius (in meters) of the spiral search around the target coordinates. Limits the search area.
+  - ``
+-
+-
 
 ## Observations
+- Face detection: Rotating the image at multiple angles significantly increases detection success, especially since some survivors are not aligned with the camera.
+- Spiral search: The Archimedean spiral pattern efficiently covers the area around the initial target. A smaller `theta_step` gives finer coverage but takes longer.
+- Speed control: Scaling velocity based on distance ensures both efficiency (fast travel) and precision (slow near targets).
+- Avoiding duplicates: The `is_new_survivor` function prevents multiple detections of the same person.
 
-- Proportional Controller (P):\
-Provides reasonably stable control but reacts slowly when exiting curves.
-The absence of a damping term leads to noticeable oscillations and delayed course correction, resulting in the worst lap time among the three controllers.
+## Images
+The following are some images that give a better understanding of the exercise and the execution process.
 
-- Proportional Derivative Controller (PD):\
-Offers the best overall stability. The derivative term dampens the response and reduces oscillations, allowing the car to recover from turns more quickly and smoothly.\
-This resulted in the fastest lap time.
+- Terminal output:
+This is the complete output in the terminal after the drone has succeed in its mission.
+<img width="1111" height="425" alt="Captura desde 2025-12-09 19-22-17" src="https://github.com/user-attachments/assets/c65d7e4c-cc35-4b36-bc01-bfa43257cc38" />
 
-- Proportional Integral Derivative Controller (PID):\
-Performs similarly to the P controller but introduces additional instability. Only a very small integral gain was usable, as higher values caused significant overshoot and oscillatory steering.\
-In this particular task, the integral component provides minimal benefit due to the continuously changing nature of the tracking error, leading to a lap time slightly worse than the PD controller.
+- Base:
+This is the base, a boat where the drone takes off and where it returns after completing its mission.
+<img width="1111" height="397" alt="Captura desde 2025-12-09 19-22-49" src="https://github.com/user-attachments/assets/a91e27e2-6722-4859-a26a-8eab767c31bc" />
 
-- Additional Note:\
-Debug print statements inside the control loop noticeably degraded performance due to resource usage and timing delays. For this reason, they were commented out during testing.
+- Survivors:
+These are the survivors whose faces the drone above them has to recognise.
+<img width="1111" height="875" alt="Captura desde 2025-12-09 19-24-41" src="https://github.com/user-attachments/assets/52390d13-ebde-475b-9573-2e1980d60f11" />
